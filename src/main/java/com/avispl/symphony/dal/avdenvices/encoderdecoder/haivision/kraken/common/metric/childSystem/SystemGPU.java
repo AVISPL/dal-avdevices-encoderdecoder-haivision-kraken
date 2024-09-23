@@ -1,3 +1,7 @@
+/*
+ *  Copyright (c) 2024 AVI-SPL, Inc. All Rights Reserved.
+ */
+
 package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric.childSystem;
 
 /**

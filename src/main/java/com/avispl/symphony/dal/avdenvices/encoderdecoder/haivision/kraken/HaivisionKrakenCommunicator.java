@@ -275,10 +275,10 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 				localExtendedStatistics = extendedStatistics;
 			}
 			isEmergencyDelivery = false;
-			} finally {
-				reentrantLock.unlock();
-			}
-			return Collections.singletonList(localExtendedStatistics);
+		} finally {
+			reentrantLock.unlock();
+		}
+		return Collections.singletonList(localExtendedStatistics);
 	}
 
 	/**
