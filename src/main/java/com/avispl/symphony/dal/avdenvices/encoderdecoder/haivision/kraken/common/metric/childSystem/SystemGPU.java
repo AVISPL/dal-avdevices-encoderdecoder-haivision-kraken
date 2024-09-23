@@ -13,11 +13,11 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
  */
 public enum SystemGPU {
     SYS_GPU_VIDEO_CLOCK("SystemGPUsVideoClock", "videoClock"),
-    SYS_GPU_TEMP("SystemGPUsTemperature", "temperature"),
+    SYS_GPU_TEMP("SystemGPUsTemperature(°C)", "temperature"),
     SYS_GPU_NAME("SystemGPUsName", "name"),
     SYS_GPU_SERIAL("SystemGPUsSerial", "serial"),
-    SYS_GPU_MEM_USED("SystemGPUsMemoryUsed", "memoryUsed"),
-    SYS_GPU_MEM_TOTAL("SystemGPUsMemoryTotal", "memoryTotal"),
+    SYS_GPU_MEM_USED("SystemGPUsMemoryUsed(%)", "memoryUsed"),
+    SYS_GPU_MEM_TOTAL("SystemGPUsMemoryTotal(%)", "memoryTotal"),
     ;
     private final String name;
     private final String field;

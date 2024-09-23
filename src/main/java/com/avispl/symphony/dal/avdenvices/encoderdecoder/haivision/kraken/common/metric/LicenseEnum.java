@@ -18,7 +18,7 @@ public enum LicenseEnum {
     EXPIRATION("Expiration", "expiration"),
     IS_LICENSE_VALID("IsLicenseValid", "is_license_valid"),
     LICENCE_MAC_ADDRESS("LicenseMACAddress", "license_mac_address"),
-    MAX_ENCODERS("Max_Encoders", "max_encoders"),
+    MAX_ENCODERS("MaxEncoders", "max_encoders"),
     SYSTEM_INSTANCE("SystemInstanceUUID", "system_instance_uuid"),
     VERSION_LIMIT("VersionLimit", "version_limit"),
     VERSION_LIMIT_TEXT("VersionLimitText", "version_limit_text"),

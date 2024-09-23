@@ -16,15 +16,15 @@ public enum StreamInfoEnum {
     STREAM_NAME("StreamName", "name"),
     DESCRIPTION("Description", "description"),
     INPUT_STREAMS("Inputs", "input"),
-    AUTO_START("AUTO_START", "auto_start"),
-    LOG_TO_FILE("Log_To_File", "log_to_file"),
+    AUTO_START("AutoStart", "auto_start"),
+    LOG_TO_FILE("LogToFile", "log_to_file"),
     TRANSCODER("Transcoder", "transcoder"),
     OUTPUTS("Outputs", "outputs"),
     METADATA("Metadata", "metadatas"),
     MODE( "Mode","mode"),
     STATE( "State", "state"),
-    STATUS("status","status"),
-    SUB_STATUS("sub_status", "sub_status");
+    STATUS("Status","status"),
+    SUB_STATUS("SubStatus", "sub_status");
 
     private final String name;
     private final String field;

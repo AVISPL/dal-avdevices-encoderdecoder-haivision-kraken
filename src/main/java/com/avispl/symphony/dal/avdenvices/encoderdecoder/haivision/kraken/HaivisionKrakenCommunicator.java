@@ -51,26 +51,22 @@ import javax.security.auth.login.FailedLoginException;
 
 
 /**
- * HaivisionGatewayCommunicator Adapter
+ * HaivisionKrakenCommunicator Adapter
  *
  * Supported features are:
- * Monitoring for Device Information and Route information
+ * Monitoring for System Information and Stream information
  *
  * Monitoring Capabilities:
- * Haivision Media Gateway version 1.0.0
+ * Haivision Kraken Video Transcoder version 1.0.0
  *
- * DeviceID
- * DeviceName
- * FirmwareVersion
- * IPAddress
- * LastConnected
- * LastConnection
- * PendingSync
- * SerialNumber
- * Status
- * StatusCode
- * StatusDetails
- * Type
+ * CurrentTime
+ * Uptime
+ * Version
+ * License
+ * Network
+ * NetworkInterface
+ * Service
+ * Streams
  *
  * @author Harry / Symphony Dev Team<br>
  * Created on 8/15/2024
@@ -88,6 +84,10 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 */
 	private final ReentrantLock reentrantLock = new ReentrantLock();
 
+	/**
+	 * ObjectMapper instance used for converting between
+	 * Java objects and JSON representations.
+	 */
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
@@ -125,7 +125,9 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 */
 	private final Map<String, String> cacheValue = new HashMap<>();
 
-
+	/**
+	 * ping mode
+	 */
 	private PingMode pingMode = PingMode.ICMP;
 
 	/**
@@ -147,7 +149,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	}
 
 	/**
-	 * Constructs a new instance of HaivisionGatewayCommunicator.
+	 * Constructs a new instance of HaivisionKrakenCommunicator.
 	 */
 	public HaivisionKrakenCommunicator() throws IOException {
 		this.setTrustAllCertificates(true);
@@ -290,7 +292,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateSystemInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data
-			JsonNode response = this.doGet(String.format(HaivisionCommand.GET_SYSTEM_INFO), JsonNode.class);
+			JsonNode response = this.doGet(HaivisionCommand.GET_SYSTEM_INFO, JsonNode.class);
 			if (response != null && response.has(HaivisionConstant.RESULT) && response.get(HaivisionConstant.RESULT).asBoolean()) {
 				allSystemInfoSet.clear();
 				for (SystemsEnum item : SystemsEnum.values()) {
@@ -346,7 +348,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateNetworkInfo(Map<String, String> stats) throws Exception{
 		try {
 			// Retrieve data
-			JsonNode response = this.doGet(String.format(HaivisionCommand.GET_NETWORK_INFO), JsonNode.class);
+			JsonNode response = this.doGet(HaivisionCommand.GET_NETWORK_INFO, JsonNode.class);
 			if (response != null && response.has(HaivisionConstant.NICS) && response.get(HaivisionConstant.NICS).isArray()) {
 				allNetworkSet.clear();
 
@@ -389,7 +391,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateSystemGPUInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data license
-			JsonNode response = this.doGet(String.format(HaivisionCommand.GET_SYSTEM_GPUS), JsonNode.class);
+			JsonNode response = this.doGet(HaivisionCommand.GET_SYSTEM_GPUS, JsonNode.class);
 			if (response != null && response.has(HaivisionConstant.DATA)) {
 				allSystemGPUSet.clear();
 				JsonNode dataGPU = response.get(HaivisionConstant.DATA);
@@ -449,8 +451,8 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateServiceInfo(Map<String, String> stats) throws Exception{
 		try{
 			// retrieve data RTSP
-			JsonNode responseRTSP = this.doGet(String.format(HaivisionCommand.GET_RTSP), JsonNode.class);
-			JsonNode responseWebserver = this.doGet(String.format(HaivisionCommand.GET_WEBSERVER), JsonNode.class);
+			JsonNode responseRTSP = this.doGet(HaivisionCommand.GET_RTSP, JsonNode.class);
+			JsonNode responseWebserver = this.doGet(HaivisionCommand.GET_WEBSERVER, JsonNode.class);
 
 			if(responseRTSP != null && responseRTSP.has("rtsp_port")){
 				cacheValue.put("RtspServerPort", responseRTSP.get("rtsp_port").asText());
@@ -486,7 +488,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateLicenseInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data license
-			JsonNode response = this.doGet(String.format(HaivisionCommand.GET_LICENSE_INFO), JsonNode.class);
+			JsonNode response = this.doGet(HaivisionCommand.GET_LICENSE_INFO, JsonNode.class);
 			if (response != null) {
 				for (LicenseEnum licenseEnum : LicenseEnum.values()) {
 					if (response.has(licenseEnum.getField())) {
@@ -519,7 +521,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateStreamsInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data stream
-			JsonNode response = this.doGet(String.format(HaivisionCommand.GET_ALL_STREAMS), JsonNode.class);
+			JsonNode response = this.doGet(HaivisionCommand.GET_ALL_STREAMS, JsonNode.class);
 			if (response != null && response.has(HaivisionConstant.STREAM_LIST) && response.get(HaivisionConstant.STREAM_LIST).isArray()) {
 				allStreamNameSet.clear();
 				for (JsonNode item : response.get(HaivisionConstant.STREAM_LIST)) {
@@ -569,7 +571,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			if (!node.isArray()) {
 				return;
 			}
-			JsonNode responseMetadata = this.doGet(String.format(HaivisionCommand.GET_METADATA), JsonNode.class);
+			JsonNode responseMetadata = this.doGet(HaivisionCommand.GET_METADATA, JsonNode.class);
 			if (responseMetadata != null && responseMetadata.has(HaivisionConstant.METADATA_LIST) && responseMetadata.get(HaivisionConstant.METADATA_LIST).isArray()) {
 				// Loop through the metadata UUIDs from the original object
 				for (JsonNode metadataUuidNode : node) {
