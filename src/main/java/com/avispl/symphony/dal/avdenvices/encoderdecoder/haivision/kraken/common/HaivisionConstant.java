@@ -8,7 +8,7 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
  * Enum representing various the constant.
  *
  * @author Harry / Symphony Dev Team<br>
- * Created on 8/1/2024
+ * Created on 9/19/2024
  * @since 1.0.0
  */
 public class HaivisionConstant {

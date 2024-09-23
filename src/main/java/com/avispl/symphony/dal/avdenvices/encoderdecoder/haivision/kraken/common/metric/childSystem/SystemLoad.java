@@ -1,5 +1,12 @@
 package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric.childSystem;
 
+/**
+ * Enum representing various system load.
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 9/16/2024
+ * @since 1.0.0
+ */
 public enum SystemLoad {
     SYS_MEM_LOAD("SystemMemoryLoad", "memload"),
     SYS_CPU_LOAD("SystemCPULoad", "cpuload"),

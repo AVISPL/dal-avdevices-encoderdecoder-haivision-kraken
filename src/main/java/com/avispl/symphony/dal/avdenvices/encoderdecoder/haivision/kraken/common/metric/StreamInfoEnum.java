@@ -1,5 +1,12 @@
 package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric;
 
+/**
+ * Enum representing various stream.
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 9/16/2024
+ * @since 1.0.0
+ */
 public enum StreamInfoEnum {
     STREAM_ID("StreamID", "uuid"),
     STREAM_NAME("StreamName", "name"),

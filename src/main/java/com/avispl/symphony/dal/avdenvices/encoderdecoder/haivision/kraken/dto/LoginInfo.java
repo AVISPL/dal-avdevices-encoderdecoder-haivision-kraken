@@ -2,6 +2,13 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.dto;
 
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.HaivisionConstant;
 
+/**
+ * Enum representing various system.
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 9/16/2024
+ * @since 1.0.0
+ */
 public class LoginInfo {
     private long loginDateTime = 0;
     private String token;

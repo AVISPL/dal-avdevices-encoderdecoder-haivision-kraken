@@ -240,6 +240,9 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		super.internalDestroy();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	protected HttpHeaders putExtraRequestHeaders(HttpMethod httpMethod, String uri, HttpHeaders headers) throws Exception {
 		if (StringUtils.isNotNullOrEmpty(this.authenticationCookie)) {
@@ -278,6 +281,12 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			return Collections.singletonList(localExtendedStatistics);
 	}
 
+	/**
+	 * Populates system information into the provided stats map by retrieving data from the system info endpoint.
+	 *
+	 * @param stats a map to store system information as key-value pairs
+	 * @throws ResourceNotReachableException if the system information cannot be retrieved
+	 */
 	private void populateSystemInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data
@@ -328,6 +337,12 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		}
 	}
 
+	/**
+	 * Populates network information into the provided stats map by retrieving data from the network info endpoint.
+	 *
+	 * @param stats a map to store network information as key-value pairs
+	 * @throws ResourceNotReachableException if the network information cannot be retrieved
+	 */
 	private void populateNetworkInfo(Map<String, String> stats) throws Exception{
 		try {
 			// Retrieve data
@@ -364,6 +379,13 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		}
 	}
 
+
+	/**
+	 * Populates system GPUs information into the provided stats map by retrieving data from the system GPUs info endpoint.
+	 *
+	 * @param stats a map to store system GPUs information as key-value pairs
+	 * @throws ResourceNotReachableException if the system GPUs information cannot be retrieved
+	 */
 	private void populateSystemGPUInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data license
@@ -417,6 +439,13 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		}
 	}
 
+
+	/**
+	 * Populates service information into the provided stats map by retrieving data from the service info endpoint.
+	 *
+	 * @param stats a map to store service information as key-value pairs
+	 * @throws ResourceNotReachableException if the service information cannot be retrieved
+	 */
 	private void populateServiceInfo(Map<String, String> stats) throws Exception{
 		try{
 			// retrieve data RTSP
@@ -443,10 +472,17 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			stats.put("Service" + HaivisionConstant.HASH + "WebServerInterfaces", valueWebServer);
 
 		} catch (Exception e){
-			throw new ResourceNotReachableException("Error when retrieving system GPUs info", e);
+			throw new ResourceNotReachableException("Error when retrieving service info", e);
 		}
 	}
 
+
+	/**
+	 * Populates license information into the provided stats map by retrieving data from the license info endpoint.
+	 *
+	 * @param stats a map to store license information as key-value pairs
+	 * @throws ResourceNotReachableException if the license information cannot be retrieved
+	 */
 	private void populateLicenseInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data license
@@ -469,10 +505,17 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 				}
 			}
 		} catch (Exception e) {
-			throw new ResourceNotReachableException("Error when retrieving network info", e);
+			throw new ResourceNotReachableException("Error when retrieving license info", e);
 		}
 	}
 
+
+	/**
+	 * Populates stream information into the provided stats map by retrieving data from the stream info endpoint.
+	 *
+	 * @param stats a map to store stream information as key-value pairs
+	 * @throws ResourceNotReachableException if the stream information cannot be retrieved
+	 */
 	private void populateStreamsInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data stream
@@ -510,6 +553,13 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		}
 	}
 
+
+	/**
+	 * Populates metadata information into the provided stats map by retrieving data from the metadata info endpoint.
+	 *
+	 * @param stats a map to store metadata information as key-value pairs
+	 * @throws ResourceNotReachableException if the metadata information cannot be retrieved
+	 */
 	private void populateMetadata(Map<String, String> stats, String jsonString, String name) {
 		if (jsonString.equalsIgnoreCase(HaivisionConstant.NONE)) {
 			return;
@@ -540,8 +590,8 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 
 
 	/**
-         * {@inheritDoc}
-         */
+	 * {@inheritDoc}
+   */
 	@Override
 	public void controlProperty(ControllableProperty controllableProperty) throws Exception {
 
@@ -638,7 +688,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			JsonNode rootNode = mapper.readTree(responseBody);
 			return rootNode.path("id").asText(null);
 		} catch (Exception e) {
-			System.err.println("Error parsing session ID from response: " + e.getMessage());
+			logger.error("Error parsing session ID from response:", e);
 			return null;
 		}
 	}
@@ -675,7 +725,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 			return dateFormat.format(date);
 		} catch (Exception e) {
-			logger.error("Error when convert date data");
+			logger.error("Error when convert date data", e);
 			return HaivisionConstant.NONE;
 		}
 	}

@@ -1,5 +1,12 @@
 package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric.childSystem;
 
+/**
+ * Enum representing various system GPUs.
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 9/16/2024
+ * @since 1.0.0
+ */
 public enum SystemGPU {
     SYS_GPU_VIDEO_CLOCK("SystemGPUsVideoClock", "videoClock"),
     SYS_GPU_TEMP("SystemGPUsTemperature", "temperature"),

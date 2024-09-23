@@ -1,5 +1,12 @@
 package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric;
 
+/**
+ * Enum representing various license.
+ *
+ * @author Harry / Symphony Dev Team<br>
+ * Created on 9/16/2024
+ * @since 1.0.0
+ */
 public enum LicenseEnum {
     ACTIVE_BYPASS_SESSION("ActiveBypassSessions", "active_bypass_sessions"),
     ACTIVE_TRANSCODER_SESSIONS("ActiveTranscoderSessions", "active_transcoder_sessions"),
