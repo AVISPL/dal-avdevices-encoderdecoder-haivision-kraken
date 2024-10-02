@@ -63,7 +63,7 @@ public class LoginInfo {
 
     /**
      * Check token expiry time
-     * Token is timeout when elapsed > 55 min
+     * Token is timeout when elapsed > 15 min
      *
      * @return boolean
      */

@@ -12,8 +12,8 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
  * @since 1.0.0
  */
 public enum SystemLoad {
-    SYS_MEM_LOAD("SystemMemoryLoad", "memload"),
-    SYS_CPU_LOAD("SystemCPULoad", "cpuload"),
+    SYS_MEM_LOAD("SystemMemoryLoad(%)", "usedPercent"),
+    SYS_CPU_LOAD("SystemCPULoad(%)", "loadPercent"),
     ;
     private final String name;
     private final String field;

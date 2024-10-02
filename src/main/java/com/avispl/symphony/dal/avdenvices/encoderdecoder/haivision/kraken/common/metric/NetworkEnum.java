@@ -12,12 +12,10 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
  * @since 1.0.0
  */
 public enum NetworkEnum {
-    DEFAULT_INTERFACE("DefaultInterface", "defaultInterface"),
     DNS_SERVER_0("DNSServer0", "dnsServer-0"),
     HOSTNAME("Hostname", "hostname"),
     IP_FORWARD("IPForward", "ipForward"),
     NTP_ADDRESS("NTPAddress", "ntpAddress"),
-    SUBNET_MASK("SubnetMask", "subnetMask"),
     ;
     private final String name;
     private final String field;

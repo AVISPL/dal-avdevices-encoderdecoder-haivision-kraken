@@ -14,17 +14,15 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
 public enum StreamInfoEnum {
     STREAM_ID("StreamID", "uuid"),
     STREAM_NAME("StreamName", "name"),
-    DESCRIPTION("Description", "description"),
-    INPUT_STREAMS("Inputs", "input"),
+    INPUT_STREAMS("Input", "input"),
     AUTO_START("AutoStart", "auto_start"),
-    LOG_TO_FILE("LogToFile", "log_to_file"),
+    PASSTHRU("Passthru", "passthru_uuid"),
     TRANSCODER("Transcoder", "transcoder"),
-    OUTPUTS("Outputs", "outputs"),
+    OUTPUTS("Output", "outputs"),
     METADATA("Metadata", "metadatas"),
     MODE( "Mode","mode"),
     STATE( "State", "state"),
-    STATUS("Status","status"),
-    SUB_STATUS("SubStatus", "sub_status");
+    STATUS("Status","status");
 
     private final String name;
     private final String field;
