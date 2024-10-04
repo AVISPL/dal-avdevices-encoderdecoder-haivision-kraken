@@ -57,7 +57,19 @@ public class HaivisionKrakenCommunicatorTest {
 	void testGetAllStream() throws Exception{
 		extendedStatistic = (ExtendedStatistics) haivisionKrakenCommunicator.getMultipleStatistics().get(0);
 		Map<String, String> statistics = extendedStatistic.getStatistics();
+		System.out.println(statistics);
 		Assert.assertEquals(96, statistics.size());
 	}
+@Test
+void testSessionExist() throws Exception {
+	while (true) {
+		extendedStatistic = (ExtendedStatistics) haivisionKrakenCommunicator.getMultipleStatistics().get(0);
+		Map<String, String> statistics = extendedStatistic.getStatistics();
+		Assert.assertEquals(96, statistics.size());
+		System.out.println("Statistics size is correct. Waiting 60 seconds before next check...");
+		Thread.sleep(60000);
+	}
+}
+
 
 }

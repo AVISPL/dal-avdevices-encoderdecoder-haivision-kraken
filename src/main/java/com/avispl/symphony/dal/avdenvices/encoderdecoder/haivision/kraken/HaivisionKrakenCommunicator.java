@@ -22,11 +22,11 @@ import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.HaivisionConstant;
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.PingMode;
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric.*;
-import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric.childSystem.SystemGPU;
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.metric.childSystem.SystemLoad;
 import com.avispl.symphony.dal.util.StringUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -114,6 +114,11 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 * Store previous/current ExtendedStatistics
 	 */
 	private ExtendedStatistics localExtendedStatistics;
+
+	/**
+	 * Checking first time init
+	 * */
+	private boolean firstTimeInit = false;
 
 	/**
 	 * isEmergencyDelivery to check if control flow is trigger
@@ -265,13 +270,13 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			ExtendedStatistics extendedStatistics = new ExtendedStatistics();
 			if (!isEmergencyDelivery) {
 				if (!isValidCookie()) {
-					throw new FailedLoginException(String.format("Failed to login to device: %s.", this.authenticationCookie));
+					throw new FailedLoginException("Failed to login to device");
 				}
 				populateSystemInfo(stats);
 				populateNetworkInfo(stats);
 				populateLicenseInfo(stats);
 				populateStreamsInfo(stats);
-				populateSystemGPUInfo(stats);
+				populateSystemLoadInfo(stats);
 				populateServiceInfo(stats);
 				extendedStatistics.setStatistics(stats);
 				localExtendedStatistics = extendedStatistics;
@@ -300,21 +305,6 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 						cacheValue.put(item.getName(), response.get(item.getField()).asText());
 					}
 				}
-				// retrieve data network interface of system
-				JsonNode networkInterfaces = response.get(HaivisionConstant.NETWORK_INTERFACE);
-				if (networkInterfaces != null && networkInterfaces.isObject()) {
-					Iterator<String> interfaces = networkInterfaces.fieldNames();
-					while (interfaces.hasNext()) {
-						String interfaceName = interfaces.next();
-						allSystemInfoSet.add(interfaceName);
-						JsonNode interfaceData = networkInterfaces.get(interfaceName);
-						for (SystemsEnum item : SystemsEnum.values()) {
-							if (interfaceData.has(item.getField())) {
-								cacheValue.put(interfaceName + HaivisionConstant.HASH + item.getName(), interfaceData.get(item.getField()).asText());
-							}
-						}
-					}
-				}
 				//populate system
 				for (SystemsEnum system : SystemsEnum.values()){
 					String systemName = system.getName();
@@ -323,14 +313,6 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 						stats.put(systemName, formatMillisecondsToDate(value));
 					} else {
 						stats.put(systemName, value);
-					}
-				}
-				//populate network interface
-				for (String name : allSystemInfoSet){
-					for (NetWorkInterfaceBySystemInfoEnum item : NetWorkInterfaceBySystemInfoEnum.values()) {
-						String nameProperty = name + HaivisionConstant.HASH + item.getName();
-						String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
-						stats.put("NetworkInterface: " + uppercaseFirstCharacter(name) + HaivisionConstant.HASH + item.getName(), value);
 					}
 				}
 			}
@@ -352,29 +334,33 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			if (response != null && response.has(HaivisionConstant.NICS) && response.get(HaivisionConstant.NICS).isArray()) {
 				allNetworkSet.clear();
 
+				for (NetworkEnum networkEnum : NetworkEnum.values()) {
+					cacheValue.put(networkEnum.getName(), response.get(networkEnum.getField()).asText());
+				}
 				for (JsonNode item : response.get(HaivisionConstant.NICS)) {
 					String group = item.get(HaivisionConstant.NAME).asText();
 					allNetworkSet.add(group);
-					for (NetworkEnum networkEnum : NetworkEnum.values()) {
-						if(networkEnum.equals(NetworkEnum.SUBNET_MASK)){
-							cacheValue.put(networkEnum.getName(), getDefaultValueForNullData(item.get(networkEnum.getField()).asText()));
-						} else {
-							cacheValue.put(networkEnum.getName(), response.get(networkEnum.getField()).asText());
-						}
+					for(NetworkInterfaceEnum networkInterfaceEnum : NetworkInterfaceEnum.values()){
+						cacheValue.put(networkInterfaceEnum.getName(), getDefaultValueForNullData(item.get(networkInterfaceEnum.getField()).asText()));
 					}
 				}
 				// Populate network
+				for (NetworkEnum item : NetworkEnum.values()) {
+					String nameProperty = item.getName();
+					String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
+					stats.put(HaivisionConstant.NETWORK + HaivisionConstant.HASH + item.getName(), value);
+				}
+
+				// Populate network interface
 				for (String name : allNetworkSet) {
-					for (NetworkEnum item : NetworkEnum.values()) {
-						String nameProperty = item.getName();
+					for (NetworkInterfaceEnum itemInterface : NetworkInterfaceEnum.values()) {
+						String nameProperty = itemInterface.getName();
 						String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
-						if (item == NetworkEnum.IP_FORWARD) {
-							stats.put(HaivisionConstant.NETWORK + uppercaseFirstCharacter(name) + HaivisionConstant.HASH + item.getName(), value.toUpperCase());
-						} else {
-							stats.put(HaivisionConstant.NETWORK + uppercaseFirstCharacter(name) + HaivisionConstant.HASH + item.getName(), value);
-						}
+						stats.put("NetworkInterface_" + uppercaseFirstCharacter(name) + HaivisionConstant.HASH + itemInterface.getName(), value);
 					}
 				}
+				// Populate interface of webserver
+				stats.put(HaivisionConstant.SERVICE + HaivisionConstant.HASH + HaivisionConstant.WEBSERVER_INTERFACE, String.join(", ", allNetworkSet));
 			}
 		} catch (Exception e) {
 			throw new ResourceNotReachableException("Error when retrieving network info", e);
@@ -388,59 +374,32 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 * @param stats a map to store system GPUs information as key-value pairs
 	 * @throws ResourceNotReachableException if the system GPUs information cannot be retrieved
 	 */
-	private void populateSystemGPUInfo(Map<String, String> stats) throws Exception{
+	private void populateSystemLoadInfo(Map<String, String> stats) throws Exception{
 		try {
 			// retrieve data license
-			JsonNode response = this.doGet(HaivisionCommand.GET_SYSTEM_GPUS, JsonNode.class);
-			if (response != null && response.has(HaivisionConstant.DATA)) {
+			JsonNode response = this.doGet(HaivisionCommand.GET_SYSTEM_LOAD, JsonNode.class);
+			if (response != null && response.has(HaivisionConstant.MEMORY)) {
 				allSystemGPUSet.clear();
-				JsonNode dataGPU = response.get(HaivisionConstant.DATA);
-				if(!dataGPU.get("gpus").isEmpty()){
-					for(JsonNode item : response.get("gpus")){
-						String gpuName = item.get(HaivisionConstant.NAME).asText();
-						String gpuIndex = item.get(HaivisionConstant.INDEX).asText();
-						if (Integer.parseInt(gpuIndex) > 0) {
-							allSystemGPUSet.add(gpuName + gpuIndex);
-						} else {
-							allSystemGPUSet.add(gpuName);
-						}
-						for(SystemGPU systemGPU: SystemGPU.values()){
-							cacheValue.put(systemGPU.getName(), item.get(systemGPU.getField()).asText());
-						}
-						for (SystemLoad systemLoad: SystemLoad.values()){
-							cacheValue.put(systemLoad.getName(), dataGPU.get(systemLoad.getField()).asText());
-						}
+				JsonNode memorLoad = response.get(HaivisionConstant.MEMORY);
+				JsonNode cpuLoad = response.get(HaivisionConstant.CPU);
+				for (SystemLoad systemLoad: SystemLoad.values()){
+					if(systemLoad.equals(SystemLoad.SYS_MEM_LOAD)){
+						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(memorLoad.get(systemLoad.getField()).asText()));
+					} else {
+						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(cpuLoad.get(systemLoad.getField()).asText()));
 					}
-					// populate system gpu
-					for (String name : allSystemGPUSet) {
-						for (SystemGPU item : SystemGPU.values()) {
-							String nameProperty = item.getName();
-							String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
-							stats.put("System" + uppercaseFirstCharacter(name) + HaivisionConstant.HASH + item.getName(), value);
-						}
-						for(SystemLoad systemLoad: SystemLoad.values()){
-							String nameProperty = systemLoad.getName();
-							String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
-							stats.put("System" + uppercaseFirstCharacter(name) + HaivisionConstant.HASH + systemLoad.getName(), value);
-						}
-					}
-				} else {
-					for(SystemLoad systemLoad: SystemLoad.values()){
-						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(dataGPU.get(systemLoad.getField()).asText()));
-					}
+				}
 					// populate system load
 					for (SystemLoad itemLoad : SystemLoad.values()) {
 						String nameProperty = itemLoad.getName();
 						String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
-						stats.put("System" + HaivisionConstant.HASH + itemLoad.getName(), value);
+						stats.put(HaivisionConstant.SYSTEM + HaivisionConstant.HASH + itemLoad.getName(), value);
 					}
-				}
 			}
 		} catch (Exception e) {
 			throw new ResourceNotReachableException("Error when retrieving system GPUs info", e);
 		}
 	}
-
 
 	/**
 	 * Populates service information into the provided stats map by retrieving data from the service info endpoint.
@@ -455,23 +414,20 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			JsonNode responseWebserver = this.doGet(HaivisionCommand.GET_WEBSERVER, JsonNode.class);
 
 			if(responseRTSP != null && responseRTSP.has("rtsp_port")){
-				cacheValue.put("RtspServerPort", responseRTSP.get("rtsp_port").asText());
+				cacheValue.put(HaivisionConstant.RTSP_SERVER_PORT, responseRTSP.get("rtsp_port").asText());
 			}
 
 			// populate rtsp
-			String valueRTSP = getDefaultValueForNullData(cacheValue.get("RtspServerPort"));
-			stats.put("Service" + HaivisionConstant.HASH + "RtspServerPort", valueRTSP);
+			String valueRTSP = getDefaultValueForNullData(cacheValue.get(HaivisionConstant.RTSP_SERVER_PORT));
+			stats.put(HaivisionConstant.SERVICE + HaivisionConstant.HASH + HaivisionConstant.RTSP_SERVER_PORT, valueRTSP);
 
 			// retrieve web server
 			if(responseWebserver.has(HaivisionConstant.DATA)){
 				JsonNode dataWebServer = responseWebserver.get(HaivisionConstant.DATA).get("listeners");
 				if(responseWebserver.has("interfaces")){
-					cacheValue.put("WebServerInterfaces", dataWebServer.get("interfaces").asText());
+					cacheValue.put(HaivisionConstant.WEBSERVER_INTERFACE, dataWebServer.get("interfaces").asText());
 				}
 			}
-			// populate web server
-			String valueWebServer = getDefaultValueForNullData(cacheValue.get("WebServerInterfaces"));
-			stats.put("Service" + HaivisionConstant.HASH + "WebServerInterfaces", valueWebServer);
 
 		} catch (Exception e){
 			throw new ResourceNotReachableException("Error when retrieving service info", e);
@@ -511,9 +467,9 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		}
 	}
 
-
 	/**
 	 * Populates stream information into the provided stats map by retrieving data from the stream info endpoint.
+	 * Adding field if absent by using addArrayFieldIfAbsent method
 	 *
 	 * @param stats a map to store stream information as key-value pairs
 	 * @throws ResourceNotReachableException if the stream information cannot be retrieved
@@ -525,27 +481,52 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			if (response != null && response.has(HaivisionConstant.STREAM_LIST) && response.get(HaivisionConstant.STREAM_LIST).isArray()) {
 				allStreamNameSet.clear();
 				for (JsonNode item : response.get(HaivisionConstant.STREAM_LIST)) {
+
+					addArrayFieldIfAbsent((ObjectNode) item, HaivisionConstant.METADATAS);
+
 					String group = item.get(HaivisionConstant.NAME).asText();
 					allStreamNameSet.add(group);
 					for (StreamInfoEnum streamInfoEnum : StreamInfoEnum.values()) {
 						if(item.has(streamInfoEnum.getField())){
-							if(streamInfoEnum.equals(StreamInfoEnum.METADATA)){
-								cacheValue.put(group + HaivisionConstant.HASH + streamInfoEnum.getName(), getDefaultValueForNullData(item.get(streamInfoEnum.getField()).toString()));
-							} else {
-								cacheValue.put(group + HaivisionConstant.HASH + streamInfoEnum.getName(), getDefaultValueForNullData(item.get(streamInfoEnum.getField()).asText()));
+							switch (streamInfoEnum){
+								case METADATA:
+								case OUTPUTS:
+									cacheValue.put(group + HaivisionConstant.HASH + streamInfoEnum.getName(), getDefaultValueForNullData(item.get(streamInfoEnum.getField()).toString()));
+									break;
+								default:
+									cacheValue.put(group + HaivisionConstant.HASH + streamInfoEnum.getName(), getDefaultValueForNullData(item.get(streamInfoEnum.getField()).asText()));
 							}
 						}
 					}
 				}
-				// populate data stream
+			// populate data stream
 				for (String name : allStreamNameSet) {
 					for (StreamInfoEnum item : StreamInfoEnum.values()) {
 						String nameProperty = name + HaivisionConstant.HASH + item.getName();
 						String value = getDefaultValueForNullData(cacheValue.get(nameProperty));
-						if(item.equals(StreamInfoEnum.METADATA)){
-							populateMetadata(stats, value, name);
-						} else {
-							stats.put("Stream: " + nameProperty, value);
+						switch (item) {
+							case METADATA:
+								populateMetadata(stats, value, name);
+								break;
+							case INPUT_STREAMS:
+								populateInput(stats, value, name);
+								break;
+							case OUTPUTS:
+								populateOutput(stats, value, name);
+								break;
+							case PASSTHRU:
+								populatePassthru(stats, value, name);
+								break;
+							case TRANSCODER:
+								populateTranscoder(stats, value, name);
+								break;
+							case MODE:
+								value = value.equalsIgnoreCase("iorouter") ? "Bypass" : uppercaseFirstCharacter(value);
+								stats.put(HaivisionConstant.STREAM + nameProperty, value);
+								break;
+							default:
+								stats.put(HaivisionConstant.STREAM + nameProperty, value);
+								break;
 						}
 					}
 				}
@@ -555,6 +536,12 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		}
 	}
 
+	// Helper method to check and add array field if absent
+	private void addArrayFieldIfAbsent(ObjectNode item, String fieldName) {
+		if (!item.has(fieldName)) {
+			item.putArray(fieldName);
+		}
+	}
 
 	/**
 	 * Populates metadata information into the provided stats map by retrieving data from the metadata info endpoint.
@@ -574,22 +561,114 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			JsonNode responseMetadata = this.doGet(HaivisionCommand.GET_METADATA, JsonNode.class);
 			if (responseMetadata != null && responseMetadata.has(HaivisionConstant.METADATA_LIST) && responseMetadata.get(HaivisionConstant.METADATA_LIST).isArray()) {
 				// Loop through the metadata UUIDs from the original object
+				if(node.isEmpty()){
+					stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + "Metadata", HaivisionConstant.NONE);
+				}
 				for (JsonNode metadataUuidNode : node) {
 					String metadataUuid = metadataUuidNode.asText();
 					for (JsonNode metadataItem : responseMetadata.get(HaivisionConstant.METADATA_LIST)) {
 						String metadataID = metadataItem.get(HaivisionConstant.UUID).asText();
 						if (metadataUuid.equals(metadataID)) {
 							String metadataName = metadataItem.get(HaivisionConstant.NAME).asText();
-							stats.put("Stream: " + name + HaivisionConstant.HASH + "Metadata", metadataName);
+							stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + "Metadata", metadataName);
 						}
 					}
 				}
 			}
 		} catch (Exception e) {
-			logger.error("Error while populating the metadata Info", e);
+			logger.error("Error while populating the metadata info", e);
 		}
 	}
 
+
+	/**
+	 * Populates input information into the provided stats map by retrieving data from the input info endpoint.
+	 *
+	 * @param stats a map to store input information as key-value pairs
+	 * @throws ResourceNotReachableException if the input information cannot be retrieved
+	 */
+	private void populateInput(Map<String, String> stats, String inputID, String name) {
+		if (inputID.equalsIgnoreCase(HaivisionConstant.NONE)) {
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.INPUT, HaivisionConstant.NONE);
+			return;
+		}
+		try{
+			JsonNode responseInput = this.doGet(String.format(HaivisionCommand.GET_INPUT_BY_ID, inputID), JsonNode.class);
+			String inputName = responseInput.get(HaivisionConstant.NAME).asText();
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.INPUT, inputName);
+		} catch (Exception e) {
+			logger.error("Error while populating the input info", e);
+		}
+	}
+
+	/**
+	 * Populates passthru information into the provided stats map by retrieving data from the passthru info endpoint.
+	 *
+	 * @param stats a map to store passthru information as key-value pairs
+	 * @throws ResourceNotReachableException if the passthru information cannot be retrieved
+	 */
+	private void populatePassthru(Map<String, String> stats, String passthruID, String name) {
+		if (passthruID.equalsIgnoreCase(HaivisionConstant.NONE)) {
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.PASSTHRU, HaivisionConstant.NONE);
+			return;
+		}
+		try{
+			JsonNode responsePassthruOutput = this.doGet(String.format(HaivisionCommand.GET_OUTPUT_BY_ID, passthruID), JsonNode.class);
+			String passthruName = responsePassthruOutput.get(HaivisionConstant.NAME).asText();
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.PASSTHRU, getDefaultValueForNullData(passthruName));
+		} catch (Exception e) {
+			logger.error("Error while populating the passthru output info", e);
+		}
+	}
+
+	/**
+	 * Populates output information into the provided stats map by retrieving data from the output info endpoint.
+	 *
+	 * @param stats a map to store output information as key-value pairs
+	 * @throws ResourceNotReachableException if the output information cannot be retrieved
+	 */
+	private void populateOutput(Map<String, String> stats, String jsonString, String name) {
+		if (jsonString.equalsIgnoreCase(HaivisionConstant.NONE)) {
+			return;
+		}
+		try{
+			JsonNode node = objectMapper.readTree(jsonString);
+			if (!node.isArray()) {
+				return;
+			}
+			List<String> outputNames = new ArrayList<>();
+			for (JsonNode outputUuidNode : node) {
+				String outputID = outputUuidNode.asText();
+				JsonNode responseOutput = this.doGet(String.format(HaivisionCommand.GET_OUTPUT_BY_ID, outputID), JsonNode.class);
+				String inputName = responseOutput.get(HaivisionConstant.NAME).asText();
+				outputNames.add(inputName);
+			}
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + "Output", getDefaultValueForNullData(String.join(", ", outputNames)));
+
+		} catch (Exception e) {
+			logger.error("Error while populating the output info", e);
+		}
+	}
+
+	/**
+	 * Populates transcoder information into the provided stats map by retrieving data from the transcoder info endpoint.
+	 *
+	 * @param stats a map to store transcoder information as key-value pairs
+//	 * @throws ResourceNotReachableException if the transcoder information cannot be retrieved
+	 */
+	private void populateTranscoder(Map<String, String> stats, String transcoderID, String name) {
+		if (transcoderID.equalsIgnoreCase(HaivisionConstant.NONE)) {
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.TRANSCODER, HaivisionConstant.NONE);
+			return;
+		}
+		try{
+			JsonNode responseTranscoder = this.doGet(String.format(HaivisionCommand.GET_TRANSCODER_BY_ID, transcoderID), JsonNode.class);
+			String transcoderName = responseTranscoder.get(HaivisionConstant.NAME).asText();
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.TRANSCODER, transcoderName);
+		} catch (Exception e) {
+			logger.error("Error while populating the transcoder info", e);
+		}
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -644,9 +723,8 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 					String sessionId = extractSessionId(responseBody);
 					if (sessionId != null) {
 						this.authenticationCookie = "id=" + sessionId;
-						System.out.println("Session ID retrieved: " + sessionId);
 					} else {
-						System.out.println("Session ID not found in the response body.");
+						logger.error("Session ID not found in the response body.");
 						this.authenticationCookie = HaivisionConstant.EMPTY;
 						return false;
 					}
@@ -656,7 +734,6 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 							.collect(Collectors.joining(""));
 
 					this.authenticationCookie = authenticationCookies.isEmpty() ? HaivisionConstant.EMPTY : authenticationCookies;
-					System.out.println("Authentication Cookies: " + this.authenticationCookie);
 				}
 			}
 		} catch (Exception e) {
@@ -721,13 +798,13 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			return inputValue;
 		}
 		try {
-			long milliseconds = Long.parseLong(inputValue);
+			long milliseconds = Long.parseLong(inputValue) * 1000;
 			Date date = new Date(milliseconds);
 			SimpleDateFormat dateFormat = new SimpleDateFormat("MMM d, yyyy, h:mm a");
 			dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 			return dateFormat.format(date);
 		} catch (Exception e) {
-			logger.error("Error when convert date data", e);
+			logger.error("Error when converting date data", e);
 			return HaivisionConstant.NONE;
 		}
 	}
@@ -753,6 +830,12 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private boolean isValidCookie() throws Exception {
 		boolean isAuthenticate = false;
 		try {
+			if (!firstTimeInit) {
+				firstTimeInit = true;
+				deleteCookieSession();
+			} else {
+				deleteCookieSession();
+			}
 			isAuthenticate = getCookieSession();
 
 		} catch (ResourceNotReachableException e) {

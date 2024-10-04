@@ -19,8 +19,10 @@ public class HaivisionCommand {
 	public final static String GET_LICENSE_INFO = "apis/v2/license";
 	public final static String GET_ALL_STREAMS = "apis/v2/streams";
 	public final static String GET_METADATA = "apis/v2/metadata";
-	public final static String GET_SYSTEM_GPUS = "apis/v2/system/load";
+	public final static String GET_SYSTEM_LOAD = "apis/v2/system/metric/snapshot";
 	public final static String GET_RTSP = "apis/v2/system/services/rtspserver";
 	public final static String GET_WEBSERVER = "apis/v2/system/services/webserver";
-
+	public final static String GET_INPUT_BY_ID = "/apis/v2/inputs/%s";
+	public final static String GET_OUTPUT_BY_ID = "/apis/v2/outputs/%s";
+	public final static String GET_TRANSCODER_BY_ID = "/apis/v2/transcoders/%s";
 }
