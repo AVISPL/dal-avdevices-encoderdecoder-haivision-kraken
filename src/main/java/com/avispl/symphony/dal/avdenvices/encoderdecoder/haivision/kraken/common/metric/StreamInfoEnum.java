@@ -21,7 +21,6 @@ public enum StreamInfoEnum {
     OUTPUTS("Output", "outputs"),
     METADATA("Metadata", "metadatas"),
     MODE( "Mode","mode"),
-    STATE( "State", "state"),
     STATUS("Status","status");
 
     private final String name;

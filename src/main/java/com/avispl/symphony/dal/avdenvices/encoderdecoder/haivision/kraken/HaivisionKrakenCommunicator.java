@@ -615,7 +615,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		try{
 			JsonNode responsePassthruOutput = this.doGet(String.format(HaivisionCommand.GET_OUTPUT_BY_ID, passthruID), JsonNode.class);
 			String passthruName = responsePassthruOutput.get(HaivisionConstant.NAME).asText();
-			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.PASSTHRU, passthruName);
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + HaivisionConstant.PASSTHRU, getDefaultValueForNullData(passthruName));
 		} catch (Exception e) {
 			logger.error("Error while populating the passthru output info", e);
 		}
@@ -643,7 +643,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 				String inputName = responseOutput.get(HaivisionConstant.NAME).asText();
 				outputNames.add(inputName);
 			}
-			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + "Output", String.join(", ", outputNames));
+			stats.put(HaivisionConstant.STREAM + name + HaivisionConstant.HASH + "Output", getDefaultValueForNullData(String.join(", ", outputNames)));
 
 		} catch (Exception e) {
 			logger.error("Error while populating the output info", e);
