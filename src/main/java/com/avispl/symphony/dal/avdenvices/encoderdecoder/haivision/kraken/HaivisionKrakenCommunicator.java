@@ -17,6 +17,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.avispl.symphony.api.dal.dto.monitor.GenericStatistics;
 import com.avispl.symphony.api.dal.error.ResourceNotReachableException;
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.HaivisionCommand;
 import com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.common.HaivisionConstant;
@@ -153,6 +154,8 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		this.pingMode = pingMode;
 	}
 
+	private GenericStatistics genericStatistics = new GenericStatistics();
+
 	/**
 	 * Constructs a new instance of HaivisionKrakenCommunicator.
 	 */
@@ -278,6 +281,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 				populateStreamsInfo(stats);
 				populateSystemLoadInfo(stats);
 				populateServiceInfo(stats);
+				populateGenerateStatistics(stats);
 				extendedStatistics.setStatistics(stats);
 				localExtendedStatistics = extendedStatistics;
 			}
@@ -285,7 +289,25 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		} finally {
 			reentrantLock.unlock();
 		}
-		return Collections.singletonList(localExtendedStatistics);
+		return Arrays.asList(localExtendedStatistics, genericStatistics);
+	}
+
+	/**
+	 * generate GenericStatistics for adaptor
+	 *
+	 * @param stats a map to store system information as key-value pairs
+	 */
+	private void populateGenerateStatistics(Map<String, String> stats) {
+		String systemCPU = HaivisionConstant.SYSTEM + HaivisionConstant.HASH + SystemLoad.SYS_CPU_LOAD.getName();
+		String systemUptime = HaivisionConstant.SYSTEM + HaivisionConstant.HASH + SystemLoad.SYS_UP_TIME.getName();
+		if(stats.get(systemCPU) != null){
+			 genericStatistics.setCpuPercentage(Float.valueOf(stats.get(systemCPU)));
+			stats.remove(systemCPU);
+		}
+		if(stats.get(systemUptime) != null) {
+			genericStatistics.setUpTime(Long.parseLong(stats.get(systemUptime)) * 1000L);
+			stats.remove(systemUptime);
+		}
 	}
 
 	/**
@@ -380,13 +402,16 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			JsonNode response = this.doGet(HaivisionCommand.GET_SYSTEM_LOAD, JsonNode.class);
 			if (response != null && response.has(HaivisionConstant.MEMORY)) {
 				allSystemGPUSet.clear();
-				JsonNode memorLoad = response.get(HaivisionConstant.MEMORY);
+				JsonNode memoryLoad = response.get(HaivisionConstant.MEMORY);
 				JsonNode cpuLoad = response.get(HaivisionConstant.CPU);
+				JsonNode uptime = response.get("system");
 				for (SystemLoad systemLoad: SystemLoad.values()){
 					if(systemLoad.equals(SystemLoad.SYS_MEM_LOAD)){
-						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(memorLoad.get(systemLoad.getField()).asText()));
-					} else {
+						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(memoryLoad.get(systemLoad.getField()).asText()));
+					} else if(systemLoad.equals(SystemLoad.SYS_CPU_LOAD)) {
 						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(cpuLoad.get(systemLoad.getField()).asText()));
+					} else {
+						cacheValue.put(systemLoad.getName(), getDefaultValueForNullData(uptime.get(systemLoad.getField()).asText()));
 					}
 				}
 					// populate system load
