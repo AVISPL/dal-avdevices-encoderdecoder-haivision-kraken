@@ -5,17 +5,20 @@
 package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken;
 
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import com.avispl.symphony.api.dal.dto.monitor.GenericStatistics;
 import com.avispl.symphony.api.dal.error.ResourceNotReachableException;
@@ -28,18 +31,12 @@ import com.avispl.symphony.dal.util.StringUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.client.ClientHttpRequestExecution;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.CollectionUtils;
-
 
 import com.avispl.symphony.api.dal.control.Controller;
 import com.avispl.symphony.api.dal.dto.control.ControllableProperty;
@@ -47,6 +44,7 @@ import com.avispl.symphony.api.dal.dto.monitor.ExtendedStatistics;
 import com.avispl.symphony.api.dal.dto.monitor.Statistics;
 import com.avispl.symphony.api.dal.monitor.Monitorable;
 import com.avispl.symphony.dal.communicator.RestCommunicator;
+import org.springframework.web.client.RestTemplate;
 
 import javax.security.auth.login.FailedLoginException;
 
@@ -74,6 +72,57 @@ import javax.security.auth.login.FailedLoginException;
  * @since 1.0.0
  */
 public class HaivisionKrakenCommunicator extends RestCommunicator implements Monitorable, Controller {
+	/**
+	 * API header interceptor instance
+	 * @since 1.0.1
+	 * */
+	private ClientHttpRequestInterceptor haivisionInterceptor = new HaivisionX4EncoderInterceptor();
+
+	/**
+	 * HttpRequest interceptor to intercept cookie header and further use it for authentication
+	 *
+	 * @author Maksym.Rossiitsev/Symphony Team
+	 * @since 1.0.1
+	 * */
+	class HaivisionX4EncoderInterceptor implements ClientHttpRequestInterceptor {
+		@Override
+		public ClientHttpResponse intercept(org.springframework.http.HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
+
+			ClientHttpResponse response = execution.execute(request, body);
+			if (request.getURI().getPath().contains(HaivisionCommand.API_LOGIN)) {
+				HttpHeaders headers = response.getHeaders();
+				List<String> cookieHeaders = headers.get(HaivisionConstant.SET_COOKIE);
+
+                if (cookieHeaders == null || cookieHeaders.isEmpty()) {
+					StringBuilder textBuilder = new StringBuilder();
+					try (Reader reader = new BufferedReader(new InputStreamReader
+							(response.getBody(), StandardCharsets.UTF_8))) {
+						int c;
+						while ((c = reader.read()) != -1) {
+							textBuilder.append((char) c);
+						}
+					}
+					String responseBody = textBuilder.toString();
+					String sessionId = extractSessionId(responseBody);
+					if (sessionId != null) {
+						authenticationCookie = "id=" + sessionId;
+					} else {
+						logger.error("Session ID not found in the response body.");
+						authenticationCookie = HaivisionConstant.EMPTY;
+					}
+				} else {
+					for (String cookie: cookieHeaders) {
+						String cookieUUID = extractUUIDFromCookie(cookie);
+						if (StringUtils.isNotNullOrEmpty(cookieUUID)) {
+							authenticationCookie = cookieUUID.isEmpty() ? HaivisionConstant.EMPTY : "id=" + cookieUUID;
+							break;
+						}
+					}
+				}
+			}
+			return response;
+		}
+	}
 
 	/**
 	 * store authentication information
@@ -220,7 +269,10 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 */
 	@Override
 	protected void authenticate() throws Exception {
-
+		Map<String, String> request = new HashMap<>();
+		request.put("username", getLogin());
+		request.put("password", getPassword());
+		doPost(buildDeviceFullPath(HaivisionCommand.API_LOGIN), request);
 	}
 
 	/**
@@ -290,6 +342,17 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			reentrantLock.unlock();
 		}
 		return Arrays.asList(localExtendedStatistics, genericStatistics);
+	}
+
+	@Override
+	protected RestTemplate obtainRestTemplate() throws Exception {
+		RestTemplate restTemplate = super.obtainRestTemplate();
+		List<ClientHttpRequestInterceptor> restTemplateInterceptors = restTemplate.getInterceptors();
+
+		if (!restTemplateInterceptors.contains(haivisionInterceptor))
+			restTemplateInterceptors.add(haivisionInterceptor);
+
+		return restTemplate;
 	}
 
 	/**
@@ -721,54 +784,6 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	}
 
 	/**
-	 * Authenticates the user by sending a login request and retrieves the session cookie or ID.
-	 *
-	 * @return {@code true} if the session is successfully retrieved, {@code false} otherwise.
-	 * @throws ResourceNotReachableException if an error occurs during the login process.
-	 */
-	private boolean getCookieSession() {
-		try {
-			HttpClient client = this.obtainHttpClient(true);
-			HttpPost httpPost = new HttpPost(buildDeviceFullPath(HaivisionCommand.API_LOGIN));
-
-			String jsonPayload = String.format(HaivisionConstant.AUTHENTICATION_PARAM, this.getLogin(), this.getPassword());
-			httpPost.setEntity(new StringEntity(jsonPayload, ContentType.APPLICATION_JSON));
-
-			HttpResponse response = client.execute(httpPost);
-			int statusCode = response.getStatusLine().getStatusCode();
-
-			if (statusCode == 403) {
-				this.authenticationCookie = EntityUtils.toString(response.getEntity());
-				return false;
-			}
-			if (statusCode == 204) {
-				Header[] headers = response.getHeaders(HaivisionConstant.SET_COOKIE);
-				if (headers.length == 0) {
-					String responseBody = EntityUtils.toString(response.getEntity());
-					String sessionId = extractSessionId(responseBody);
-					if (sessionId != null) {
-						this.authenticationCookie = "id=" + sessionId;
-					} else {
-						logger.error("Session ID not found in the response body.");
-						this.authenticationCookie = HaivisionConstant.EMPTY;
-						return false;
-					}
-				} else {
-					String authenticationCookies = Arrays.stream(headers)
-							.map(header -> extractUUIDFromCookie(header.getValue()))
-							.collect(Collectors.joining(""));
-
-					this.authenticationCookie = authenticationCookies.isEmpty() ? HaivisionConstant.EMPTY : authenticationCookies;
-				}
-			}
-		} catch (Exception e) {
-			this.authenticationCookie = HaivisionConstant.EMPTY;
-			throw new ResourceNotReachableException("An error occurred when attempting to send a login request to the device", e);
-		}
-		return true;
-	}
-
-	/**
 	 * check value is null or empty
 	 *
 	 * @param value input value
@@ -853,7 +868,6 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 * @return boolean
 	 */
 	private boolean isValidCookie() throws Exception {
-		boolean isAuthenticate = false;
 		try {
 			if (!firstTimeInit) {
 				firstTimeInit = true;
@@ -861,14 +875,14 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			} else {
 				deleteCookieSession();
 			}
-			isAuthenticate = getCookieSession();
+			authenticate();
 
 		} catch (ResourceNotReachableException e) {
 			throw new ResourceNotReachableException("Failed to send login request to device", e);
 		} catch (Exception e) {
 			logger.error("Failed to retrieve cookie session", e);
 		}
-		return isAuthenticate;
+		return StringUtils.isNotNullOrEmpty(authenticationCookie);
 	}
 
 	/**
@@ -889,18 +903,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	 */
 	private void deleteCookieSession() {
 		try {
-			HttpClient client = this.obtainHttpClient(true);
-			HttpGet httpGet = new HttpGet(buildDeviceFullPath(HaivisionCommand.API_LOGOUT));
-			httpGet.setHeader(HaivisionConstant.COOKIE, "DisplayUnsavedWarning=true; Path=/; Secure;");
-			httpGet.setHeader(HaivisionConstant.COOKIE, String.format("id=%s; Path=/; Secure; HttpOnly;", this.authenticationCookie));
-			HttpResponse response = client.execute(httpGet);
-			int statusCode = response.getStatusLine().getStatusCode();
-			if (statusCode == 204) {
-				logger.info("Session deleted successfully. No content returned.");
-				logger.info("Delete session ID " + this.authenticationCookie);
-			} else {
-				logger.info("Unexpected status code while deleting session: " + statusCode);
-			}
+			doGet(buildDeviceFullPath(HaivisionCommand.API_LOGOUT));
 		} catch (Exception e) {
 			logger.error("Error while deleting session ID " + this.authenticationCookie, e);
 		} finally {
