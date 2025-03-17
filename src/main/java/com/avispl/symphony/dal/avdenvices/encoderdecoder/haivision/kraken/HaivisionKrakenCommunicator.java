@@ -114,7 +114,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 					for (String cookie: cookieHeaders) {
 						String cookieUUID = extractUUIDFromCookie(cookie);
 						if (StringUtils.isNotNullOrEmpty(cookieUUID)) {
-							authenticationCookie = cookieUUID.isEmpty() ? HaivisionConstant.EMPTY : "id=" + cookieUUID;
+							authenticationCookie = cookieUUID.isEmpty() ? HaivisionConstant.EMPTY : cookieUUID;
 							break;
 						}
 					}
