@@ -105,7 +105,7 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 					String responseBody = textBuilder.toString();
 					String sessionId = extractSessionId(responseBody);
 					if (sessionId != null) {
-						authenticationCookie = "id=" + sessionId;
+						authenticationCookie = sessionId;
 					} else {
 						logger.error("Session ID not found in the response body.");
 						authenticationCookie = HaivisionConstant.EMPTY;
@@ -857,8 +857,6 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 		Objects.requireNonNull(path);
 		return HaivisionConstant.HTTPS
 				+ getHost()
-				+ HaivisionConstant.COLON
-				+ getPort()
 				+ path;
 	}
 
