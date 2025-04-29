@@ -6,7 +6,7 @@
 
   <groupId>com.avispl.symphony.dal.avdenvices-encoderdecoder-haivision-kraken</groupId>
   <artifactId>symphony-dal-avdenvices-encoderdecoder-haivision-kraken</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -79,23 +79,23 @@
     <dependency>
       <groupId>com.avispl.symphony.api</groupId>
       <artifactId>symphony-api-commons</artifactId>
-      <version>5.12.0</version>
+      <version>5.15.0</version>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/symphony-api-commons-5.12.0.jar</systemPath>
+      <systemPath>${basedir}/lib/symphony-api-commons-5.15.0.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>com.avispl.symphony.api</groupId>
       <artifactId>symphony-api-dal</artifactId>
-      <version>5.12.0</version>
+      <version>5.15.0</version>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/symphony-api-dal-5.12.0.jar</systemPath>
+      <systemPath>${basedir}/lib/symphony-api-dal-5.15.0.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>com.avispl.symphony.dal</groupId>
       <artifactId>symphony-dal-commons</artifactId>
-      <version>5.12.0</version>
+      <version>5.15.0</version>
       <scope>system</scope>
-      <systemPath>${basedir}/lib/symphony-dal-commons-5.12.0.jar</systemPath>
+      <systemPath>${basedir}/lib/symphony-dal-commons-5.15.0.jar</systemPath>
     </dependency>
     <dependency>
       <groupId>org.icmp4j</groupId>
