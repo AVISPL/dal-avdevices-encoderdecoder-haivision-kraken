@@ -14,11 +14,11 @@ jobs:
       date: ${{ steps.date.outputs.date }}
     steps:
       - uses: actions/checkout@v4
-      - name: Set up JDK 1.8
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: adopt
-          java-version: 8
+          java-version: 17
           overwrite-settings: false
       - name: Get short commit hash
         id: shortrev
@@ -28,7 +28,7 @@ jobs:
         run: echo "date=$(date +'%y%m%d' | cut -c 2-)" >> $GITHUB_OUTPUT
       - name: Get project version
         id: pversion
-        run: echo "ver=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout| sed -e 's/-SNAPSHOT//g')" >> $GITHUB_OUTPUT
+        run: echo "ver=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | tail -n 1 | sed -e 's/-SNAPSHOT//g')" >> $GITHUB_OUTPUT
 
   tag:
     runs-on: ubuntu-latest
@@ -63,11 +63,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 1.8
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: adopt
-          java-version: 8
+          java-version: 17
           overwrite-settings: false
 
       - name: Version set
