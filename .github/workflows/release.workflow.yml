@@ -53,7 +53,7 @@ jobs:
       - name: PMD check
         run: mvn pmd:check
       - id: getfilename
-        run: echo "file=$(ls target/symphony-dal-avdenvices-encoderdecoder-haivision-kraken-${{ needs.versiongenerate.outputs.version }}.jar)" >> $GITHUB_OUTPUT
+        run: echo "file=$(ls target/symphony-dal-avdevices-encoderdecoder-haivision-kraken-${{ needs.versiongenerate.outputs.version }}.jar)" >> $GITHUB_OUTPUT
       - uses: actions/upload-artifact@v4
         with:
           name: HaivisionKrakenCommunicator
