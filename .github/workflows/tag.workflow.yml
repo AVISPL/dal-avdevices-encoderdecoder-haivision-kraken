@@ -81,10 +81,10 @@ jobs:
 
       - name: Get .jar file path
         id: getfilename
-        run: echo "file=$(ls target/symphony-dal-avdenvices-encoderdecoder-haivision-kraken-${{ needs.prep.outputs.ver }}.jar)" >> $GITHUB_OUTPUT
+        run: echo "file=$(ls target/symphony-dal-avdevices-encoderdecoder-haivision-kraken-${{ needs.prep.outputs.ver }}.jar)" >> $GITHUB_OUTPUT
 
       - name: Rename .jar file
-        run: mv ${{ steps.getfilename.outputs.file }} target/symphony-dal-avdenvices-encoderdecoder-haivision-kraken-${{ needs.prep.outputs.ver }}-${{ needs.prep.outputs.date }}-${{ needs.prep.outputs.rev }}.jar
+        run: mv ${{ steps.getfilename.outputs.file }} target/symphony-dal-avdevices-encoderdecoder-haivision-kraken-${{ needs.prep.outputs.ver }}-${{ needs.prep.outputs.date }}-${{ needs.prep.outputs.rev }}.jar
 
 
       - name: Install GitHub CLI
@@ -100,4 +100,4 @@ jobs:
           gh release create "v${{ needs.prep.outputs.ver }}.${{ needs.prep.outputs.date }}.${{ needs.prep.outputs.rev }}" \
           -t "Release ${{ needs.prep.outputs.ver }}.${{ needs.prep.outputs.date }}.${{ needs.prep.outputs.rev }}" \
           -n "Release ${{ needs.prep.outputs.ver }}" \
-          target/symphony-dal-avdenvices-encoderdecoder-haivision-kraken-${{ needs.prep.outputs.ver }}-${{ needs.prep.outputs.date }}-${{ needs.prep.outputs.rev }}.jar
+          target/symphony-dal-avdevices-encoderdecoder-haivision-kraken-${{ needs.prep.outputs.ver }}-${{ needs.prep.outputs.date }}-${{ needs.prep.outputs.rev }}.jar
