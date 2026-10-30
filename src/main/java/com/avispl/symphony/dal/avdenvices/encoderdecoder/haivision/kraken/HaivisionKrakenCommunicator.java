@@ -91,7 +91,13 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			ClientHttpResponse response = execution.execute(request, body);
 			if (request.getURI().getPath().contains(HaivisionCommand.API_LOGIN)) {
 				HttpHeaders headers = response.getHeaders();
-				List<String> cookieHeaders = headers.get(HaivisionConstant.SET_COOKIE);
+				// headerSet() instead of get(): HttpHeaders.get has different signatures in Spring 6 and 7
+				List<String> cookieHeaders = new ArrayList<>();
+				headers.headerSet().forEach(header -> {
+					if (header.getKey().equalsIgnoreCase(HaivisionConstant.SET_COOKIE)) {
+						cookieHeaders.addAll(header.getValue());
+					}
+				});
 
                 if (cookieHeaders == null || cookieHeaders.isEmpty()) {
 					StringBuilder textBuilder = new StringBuilder();
