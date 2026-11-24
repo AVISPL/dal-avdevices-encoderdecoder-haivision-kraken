@@ -212,9 +212,15 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private GenericStatistics genericStatistics = new GenericStatistics();
 
 	/**
+	 * Adapter metadata (version, build date, uptime), reported in the AdapterMetadata group
+	 */
+	private final AdapterMetadata adapterMetadata;
+
+	/**
 	 * Constructs a new instance of HaivisionKrakenCommunicator.
 	 */
 	public HaivisionKrakenCommunicator() throws IOException {
+		adapterMetadata = new AdapterMetadata();
 		this.setTrustAllCertificates(true);
 	}
 
@@ -340,8 +346,11 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 				populateSystemLoadInfo(stats);
 				populateServiceInfo(stats);
 				populateGenerateStatistics(stats);
+				populateAdapterMetadata(stats);
 				extendedStatistics.setStatistics(stats);
 				localExtendedStatistics = extendedStatistics;
+			} else if (localExtendedStatistics != null && localExtendedStatistics.getStatistics() != null) {
+				populateAdapterMetadata(localExtendedStatistics.getStatistics());
 			}
 			isEmergencyDelivery = false;
 		} finally {
@@ -359,6 +368,15 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 			restTemplateInterceptors.add(haivisionInterceptor);
 
 		return restTemplate;
+	}
+
+	/**
+	 * Add the AdapterMetadata group (adapter version, build date, uptime) to the statistics
+	 *
+	 * @param statistics statistics to add the properties to
+	 */
+	private void populateAdapterMetadata(Map<String, String> statistics) {
+		adapterMetadata.populate(statistics);
 	}
 
 	/**
