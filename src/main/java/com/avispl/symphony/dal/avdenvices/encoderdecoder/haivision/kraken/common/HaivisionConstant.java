@@ -14,6 +14,7 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
 public class HaivisionConstant {
 	public static final String AUTHENTICATION_PARAM = "{\"username\":\"%s\", \"password\":\"%s\"}";
 	public static final String NONE = "None";
+	public static final String NA = "N/A";
 	public static final String EMPTY = "";
 	public static final String COLON = ":";
 	public static final String HASH = "#";
