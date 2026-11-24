@@ -369,13 +369,23 @@ public class HaivisionKrakenCommunicator extends RestCommunicator implements Mon
 	private void populateGenerateStatistics(Map<String, String> stats) {
 		String systemCPU = HaivisionConstant.SYSTEM + HaivisionConstant.HASH + SystemLoad.SYS_CPU_LOAD.getName();
 		String systemUptime = HaivisionConstant.SYSTEM + HaivisionConstant.HASH + SystemLoad.SYS_UP_TIME.getName();
-		if(stats.get(systemCPU) != null){
-			 genericStatistics.setCpuPercentage(Float.valueOf(stats.get(systemCPU)));
-			stats.remove(systemCPU);
+		// SystemCPULoad(%) stays in extended properties (System group); it is also reported as a generic statistic
+		String cpu = stats.get(systemCPU);
+		if (cpu != null && !HaivisionConstant.NONE.equals(cpu)) {
+			try {
+				genericStatistics.setCpuPercentage(Float.valueOf(cpu));
+			} catch (NumberFormatException e) {
+				this.logger.warn("Unable to parse CPU load value: " + cpu, e);
+			}
 		}
-		if(stats.get(systemUptime) != null) {
-			genericStatistics.setUpTime(Long.parseLong(stats.get(systemUptime)) * 1000L);
-			stats.remove(systemUptime);
+		// Uptime is reported in the Main group (SystemsEnum.UPTIME); System#SystemUptime only feeds the generic statistic
+		String uptime = stats.remove(systemUptime);
+		if (uptime != null && !HaivisionConstant.NONE.equals(uptime)) {
+			try {
+				genericStatistics.setUpTime(Long.parseLong(uptime) * 1000L);
+			} catch (NumberFormatException e) {
+				this.logger.warn("Unable to parse uptime value: " + uptime, e);
+			}
 		}
 	}
 
