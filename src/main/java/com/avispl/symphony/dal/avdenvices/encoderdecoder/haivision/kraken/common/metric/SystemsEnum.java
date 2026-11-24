@@ -13,6 +13,7 @@ package com.avispl.symphony.dal.avdenvices.encoderdecoder.haivision.kraken.commo
  */
 public enum SystemsEnum {
     CURRENTTIME("CurrentTime", "currenttime"),
+    UPTIME("Uptime", "uptime"),
     VERSION("Version", "version"),
     ;
     private final String name;
